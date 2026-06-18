@@ -1,0 +1,865 @@
+<!-- public/index.html -->
+<!-- Purpose: Complete Responsive Frontend Layout structure for Student Portal, Admin Panels, and Modals -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Results Management Portal</title>
+    <!-- Professional Google Font Inter & Playfair Display for report cards -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="loading-state">
+
+    <!-- ==========================================
+         1. SPLASH SCREEN & LOADING ANIMATION
+         ========================================== -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="logo-spinner">
+                <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
+                    <circle cx="50" cy="50" r="40" stroke="var(--primary-color)" stroke-width="8" stroke-linecap="round" stroke-dasharray="250" stroke-dashoffset="180" class="spinner-arc"/>
+                    <path d="M35 50L45 60L65 40" stroke="var(--accent-color)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <h1 class="splash-title">School Results Portal</h1>
+            <p class="splash-subtitle">Academic Excellence Record System</p>
+            <div class="splash-progress">
+                <div class="progress-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ==========================================
+         2. CORE PORTAL APPLICATION WRAPPER
+         ========================================== -->
+    <div id="app" class="app-container hidden">
+        
+        <!-- Header Section -->
+        <header class="app-header no-print">
+            <div class="header-container">
+                <div class="brand">
+                    <div class="brand-logo">
+                        <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="48" height="48" rx="12" fill="url(#brand-grad)"/>
+                            <path d="M24 12L36 21V31C36 34.3137 33.3137 37 30 37H18C14.6863 37 12 34.3137 12 31V21L24 12Z" fill="white" fill-opacity="0.2"/>
+                            <path d="M24 10L10 20L24 30L38 20L24 10Z" stroke="white" stroke-width="3" stroke-linejoin="round"/>
+                            <path d="M15 23.5V31.5C15 33.5 16.5 35 18.5 35H29.5C31.5 35 33 33.5 33 31.5V23.5" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                            <defs>
+                                <linearGradient id="brand-grad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#1E3A8A"/>
+                                    <stop offset="1" stop-color="#3B82F6"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="portal-badge">MALAŴI</span>
+                        <h1 class="brand-title">National Results Portal</h1>
+                    </div>
+                </div>
+                
+                <nav class="header-nav">
+                    <span class="system-time">Year of Excellence 2026</span>
+                    <button id="admin-trigger-info-btn" class="info-btn" aria-label="Information">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Body Workspace -->
+        <main class="main-workspace">
+            
+            <!-- ==========================================
+                 3. STUDENT RESULTS ENQUIRY SEARCH VIEW
+                 ========================================== -->
+            <section id="student-search-view" class="portal-card-container active-view">
+                <div class="glass-search-card">
+                    <div class="card-hero-deco">
+                        <svg width="100%" height="100%" viewBox="0 0 400 120" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                            <path d="M0 0H400V100C400 100 320 60 200 80C80 100 0 40 0 40V0Z" fill="url(#hero-grad)" opacity="0.1"/>
+                            <defs>
+                                <linearGradient id="hero-grad" x1="0" y1="0" x2="400" y2="120" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#2563EB"/>
+                                    <stop offset="1" stop-color="#0D9488"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+
+                    <div class="search-card-header">
+                        <h2>Check Your Examination Results</h2>
+                        <p>Enter your formal registration details below to retrieve and print your report card.</p>
+                    </div>
+
+                    <form id="results-enquiry-form" class="enquiry-grid-form">
+                        <div class="form-group full-width">
+                            <label for="search-student-name">Student Full Name (Registered)</label>
+                            <input type="text" id="search-student-name" placeholder="e.g. John Phiri" required autocomplete="off">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="search-identifier">LIN (National ID) OR Student Code</label>
+                            <input type="text" id="search-identifier" placeholder="e.g. SCH001-2026-F1-0001 or National LIN" required autocomplete="off">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="search-form">Form</label>
+                            <select id="search-form" required>
+                                <option value="" disabled selected>Select Form</option>
+                                <option value="Form 1">Form 1 (JCE)</option>
+                                <option value="Form 2">Form 2 (JCE)</option>
+                                <option value="Form 3">Form 3 (MSCE)</option>
+                                <option value="Form 4">Form 4 (MSCE)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="search-term">Term</label>
+                            <select id="search-term" required>
+                                <option value="" disabled selected>Select Term</option>
+                                <option value="Term 1">Term 1</option>
+                                <option value="Term 2">Term 2</option>
+                                <option value="Term 3">Term 3</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="search-academic-year">Academic Year</label>
+                            <select id="search-academic-year" required>
+                                <option value="2026" selected>2026</option>
+                                <option value="2025">2025</option>
+                                <option value="2024">2024</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" id="load-results-btn" class="btn btn-primary btn-block">
+                            <span class="btn-text">LOAD RESULTS</span>
+                            <span class="btn-spinner hidden"></span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 4. REPORT CARD VIEWER SECTION
+                 ========================================== -->
+            <section id="results-display-view" class="results-viewer-container hidden">
+                <div class="view-controls no-print">
+                    <button id="back-to-search-btn" class="btn btn-secondary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                        Back to Search
+                    </button>
+                    <div class="action-group">
+                        <button id="download-pdf-btn" class="btn btn-primary">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download PDF Report
+                        </button>
+                        <button id="print-results-btn" class="btn btn-accent">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                            Print Report Card
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Complete Dynamic Report Card Blueprint -->
+                <div id="report-card-canvas" class="report-card-canvas">
+                    <!-- School Branding Header -->
+                    <div class="report-header">
+                        <div class="report-logo-placeholder">
+                            <img id="report-school-logo" src="" alt="School Logo" class="school-logo-img">
+                            <div id="report-logo-fallback" class="school-logo-fallback">LOGO</div>
+                        </div>
+                        <div class="report-school-meta">
+                            <h2 id="report-school-name" class="school-title">Chichiri Secondary School</h2>
+                            <p id="report-school-address" class="school-address">P.O. Box 30112, Chichiri, Blantyre 3, Malawi</p>
+                            <p id="report-school-contact" class="school-contact">Tel: +265 1 876 211 | Email: info@chichirisec.edu</p>
+                        </div>
+                    </div>
+
+                    <div class="report-banner">
+                        <div class="banner-line"></div>
+                        <h3 class="banner-title">OFFICIAL REPORT CARD</h3>
+                        <div class="banner-line"></div>
+                    </div>
+
+                    <!-- Student Metadata Information -->
+                    <div class="report-student-info">
+                        <div class="info-row">
+                            <span class="info-label">Student Name:</span>
+                            <span id="report-student-name-val" class="info-value">Tiyamike Phiri</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Student Code:</span>
+                            <span id="report-student-code-val" class="info-value">CSS-2026-F1-0412</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">LIN:</span>
+                            <span id="report-student-lin-val" class="info-value">N/A</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Form &amp; Section:</span>
+                            <span id="report-student-class-val" class="info-value">Form 1 (JCE)</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Academic Year:</span>
+                            <span id="report-academic-year-val" class="info-value">2026</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Term Assessed:</span>
+                            <span id="report-term-val" class="info-value">Term 1</span>
+                        </div>
+                    </div>
+
+                    <!-- Main Report Subject Results Table -->
+                    <table class="report-results-table">
+                        <thead>
+                            <tr>
+                                <th class="col-subject">Subject</th>
+                                <th class="col-score">Percentage Score</th>
+                                <th class="col-grade">Grade / Points</th>
+                                <th class="col-remarks">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-results-tbody">
+                            <!-- Populated Dynamically -->
+                        </tbody>
+                    </table>
+
+                    <!-- Academic Performance Summary Footer -->
+                    <div class="report-summary-box">
+                        <div class="summary-card">
+                            <h4 class="summary-card-title">Performance Summary</h4>
+                            <div class="summary-grid">
+                                <div id="jce-summary-row" class="summary-metric-group">
+                                    <div class="metric-item">
+                                        <span class="metric-label">Total Marks:</span>
+                                        <strong id="report-total-marks" class="metric-value">682 / 1000</strong>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Average Grade:</span>
+                                        <strong id="report-avg-grade" class="metric-value">B</strong>
+                                    </div>
+                                </div>
+                                <div id="msce-summary-row" class="summary-metric-group hidden">
+                                    <div class="metric-item">
+                                        <span class="metric-label">Best Six Points:</span>
+                                        <strong id="report-total-points" class="metric-value">12 Points</strong>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Criteria:</span>
+                                        <span class="metric-sub">Compulsory English, Math + 4 Best</span>
+                                    </div>
+                                </div>
+                                <div class="metric-item highlight-metric">
+                                    <span class="metric-label">Cohort Position:</span>
+                                    <strong id="report-position" class="metric-value">4th out of 124</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comments & Signatures Section -->
+                    <div class="report-sign-off">
+                        <div class="remarks-box">
+                            <h5>Form Teacher's Remarks</h5>
+                            <p id="report-teacher-remarks" class="remarks-text">An excellent performance this term. Tiyamike remains a highly disciplined and outstanding student. Keep up the high standard!</p>
+                        </div>
+                        <div class="remarks-box">
+                            <h5>Head Teacher's Remarks</h5>
+                            <p id="report-head-remarks" class="remarks-text">Approved. Excellent academic record. Highly recommended for scholarship consideration.</p>
+                        </div>
+
+                        <div class="signatures-wrapper">
+                            <div class="signature-col">
+                                <div class="sig-line"></div>
+                                <span class="sig-title">Form Teacher Signature</span>
+                            </div>
+                            <div class="signature-col">
+                                <div class="signature-placeholder" style="position: relative; display: flex; gap: 10px;">
+                                    <img id="report-head-signature" class="sig-img hidden" src="" alt="Head Teacher Signature" style="max-height: 50px;">
+                                    <img id="report-school-stamp" class="sig-img hidden" src="" alt="School Stamp" style="max-height: 60px; position: absolute; right: -20px; opacity: 0.85;">
+                                    <div id="report-sig-fallback" class="sig-fallback">STAMP &amp; SIG</div>
+                                </div>
+                                <div class="sig-line"></div>
+                                <span id="report-head-name" class="sig-title">Head Teacher (Principal)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Report Verification Footer -->
+                    <div class="report-footer-seal">
+                        <div class="seal-logo">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <div class="seal-meta">
+                            <p>Officially generated via the Ministry of Education Results System.</p>
+                            <p class="seal-date">Generation Date: <span id="report-generation-date">June 18, 2026</span></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 5. SECURE ADMIN DASHBOARD WORKSPACE (HIDDEN BY DEFAULT)
+                 ========================================== -->
+            <section id="admin-dashboard-view" class="admin-workspace-container hidden">
+                <!-- Sidebar Management -->
+                <aside class="admin-sidebar no-print">
+                    <div class="sidebar-header">
+                        <div class="sidebar-user-info">
+                            <div class="avatar">
+                                <span id="sidebar-user-initials">AD</span>
+                            </div>
+                            <div>
+                                <h4 id="sidebar-username">System Administrator</h4>
+                                <span id="sidebar-role-badge" class="sidebar-role">Super Admin</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <nav class="sidebar-menu">
+                        <!-- Super Admin Controls -->
+                        <div id="super-admin-menu" class="menu-section hidden">
+                            <span class="menu-category">System Admin</span>
+                            <button class="sidebar-link active" data-tab="manage-schools">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7l9-4 9 4v14H3V7zm4 7h2m4 0h2m-6 4h2m4 0h2"/></svg>
+                                Manage Schools
+                            </button>
+                            <button class="sidebar-link" data-tab="manage-admins">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                School Admins
+                            </button>
+                        </div>
+
+                        <!-- School Admin Controls -->
+                        <div id="school-admin-menu" class="menu-section hidden">
+                            <span class="menu-category">School Operations</span>
+                            <button class="sidebar-link active" data-tab="manage-students">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+                                Student Register
+                            </button>
+                            <button class="sidebar-link" data-tab="manage-results">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                Enter Exam Marks
+                            </button>
+                            <button class="sidebar-link" data-tab="publish-results">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                                Publish Cards
+                            </button>
+                            <button class="sidebar-link" data-tab="school-settings">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                School profile
+                            </button>
+                        </div>
+                    </nav>
+
+                    <div class="sidebar-footer">
+                        <button id="admin-logout-btn" class="btn btn-danger btn-block">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            Logout
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- Dashboard Work Area -->
+                <div class="admin-workspace-content">
+                    
+                    <!-- TOP HEADER FOR ADMINS -->
+                    <div class="workspace-header no-print">
+                        <h2 id="workspace-title">Register &amp; Manage Schools</h2>
+                        <div class="school-affiliation-status">
+                            <span class="active-dot"></span>
+                            <span id="active-school-display-name">All Schools System Wide</span>
+                        </div>
+                    </div>
+
+                    <!-- TAB 1: MANAGE SCHOOLS (Super Admin) -->
+                    <div id="tab-manage-schools" class="dashboard-tab active-tab">
+                        <div class="action-card-header">
+                            <h3>Registered Educational Institutions</h3>
+                            <button id="open-register-school-modal-btn" class="btn btn-primary">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Register New School
+                            </button>
+                        </div>
+
+                        <div class="table-scroll-container">
+                            <table class="dashboard-table">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>School Name</th>
+                                        <th>District</th>
+                                        <th>Head Teacher</th>
+                                        <th>Contact Email</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="schools-table-tbody">
+                                    <!-- Populated Dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: MANAGE SCHOOL ADMINS (Super Admin) -->
+                    <div id="tab-manage-admins" class="dashboard-tab hidden">
+                        <div class="action-card-header">
+                            <h3>School Administrator Accounts</h3>
+                            <button id="open-register-admin-modal-btn" class="btn btn-primary">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+                                Create Admin Account
+                            </button>
+                        </div>
+
+                        <div class="table-scroll-container">
+                            <table class="dashboard-table">
+                                <thead>
+                                    <tr>
+                                        <th>Admin Name</th>
+                                        <th>Email Address</th>
+                                        <th>Assigned School</th>
+                                        <th>Role Assigned</th>
+                                        <th>Created Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admins-table-tbody">
+                                    <!-- Populated Dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: MANAGE STUDENTS (School Admin) -->
+                    <div id="tab-manage-students" class="dashboard-tab hidden">
+                        <div class="action-card-header">
+                            <h3>School Student Registry</h3>
+                            <div class="action-group">
+                                <button id="print-student-codes-pdf-btn" class="btn btn-secondary">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                    Print Student Codes
+                                </button>
+                                <button id="open-register-student-modal-btn" class="btn btn-primary">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Add New Student
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-scroll-container">
+                            <table class="dashboard-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student Code</th>
+                                        <th>LIN</th>
+                                        <th>Full Name</th>
+                                        <th>Form</th>
+                                        <th>Section</th>
+                                        <th>Academic Year</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-table-tbody">
+                                    <!-- Populated Dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: ENTER EXAM MARKS (School Admin) -->
+                    <div id="tab-manage-results" class="dashboard-tab hidden">
+                        <div class="results-layout-grid">
+                            <!-- Left: Search/Select Student -->
+                            <div class="student-selection-panel">
+                                <h3>Select Student for Marks Entry</h3>
+                                <div class="filter-box">
+                                    <input type="text" id="marks-student-search-input" placeholder="Search student by name or code..." class="form-control">
+                                </div>
+                                <div class="student-select-list" id="marks-student-list-container">
+                                    <!-- Dynamic list of students -->
+                                </div>
+                            </div>
+
+                            <!-- Right: Entry Form -->
+                            <div class="marks-entry-panel">
+                                <div class="selected-student-banner">
+                                    <h4 id="selected-student-display-name">No Student Selected</h4>
+                                    <p id="selected-student-display-code">Please search and select a student from the sidebar</p>
+                                </div>
+
+                                <form id="marks-entry-form" class="hidden">
+                                    <div class="entry-meta-grid">
+                                        <div class="form-group">
+                                            <label for="marks-entry-academic-year">Academic Year</label>
+                                            <select id="marks-entry-academic-year" required>
+                                                <option value="2026" selected>2026</option>
+                                                <option value="2025">2025</option>
+                                                <option value="2024">2024</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="marks-entry-term">Assessed Term</label>
+                                            <select id="marks-entry-term" required>
+                                                <option value="Term 1" selected>Term 1</option>
+                                                <option value="Term 2">Term 2</option>
+                                                <option value="Term 3">Term 3</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="subject-input-scores-container">
+                                        <h4 class="form-sub-header">Enter Academic Marks (0 - 100)</h4>
+                                        <div id="dynamic-subjects-marks-grid" class="dynamic-subjects-marks-grid">
+                                            <!-- Dynamically generated according to JCE/MSCE subjects -->
+                                        </div>
+                                    </div>
+
+                                    <div class="button-row">
+                                        <button type="submit" class="btn btn-primary">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                            Save Academic Marks
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <div id="no-student-selected-empty" class="dashboard-empty-state">
+                                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                    <p>Select a student from the sidebar panel to enter academic scorecards.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: PUBLISH RESULTS (School Admin) -->
+                    <div id="tab-publish-results" class="dashboard-tab hidden">
+                        <div class="action-card-header">
+                            <h3>Report Card Publication Panel</h3>
+                            <p class="section-desc">Manage report cards status. Draft cards are invisible to student lookups. Published cards can be loaded immediately.</p>
+                        </div>
+
+                        <div class="table-scroll-container">
+                            <table class="dashboard-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student Code</th>
+                                        <th>Full Name</th>
+                                        <th>Form</th>
+                                        <th>Assessed Term</th>
+                                        <th>Academic Year</th>
+                                        <th>Primary KPI Score</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="publish-results-table-tbody">
+                                    <!-- Populated Dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 6: SCHOOL SETTINGS PROFILE (School Admin) -->
+                    <div id="tab-school-settings" class="dashboard-tab hidden">
+                        <div class="action-card-header">
+                            <h3>School Profile Customization</h3>
+                            <p class="section-desc">Keep your official school profile updated. This detail is stamped on all printable Student Report Cards.</p>
+                        </div>
+
+                        <form id="school-settings-form" class="settings-profile-grid">
+                            <div class="form-group">
+                                <label for="settings-school-name">School Name</label>
+                                <input type="text" id="settings-school-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-school-code">School Code (Unique)</label>
+                                <input type="text" id="settings-school-code" readonly class="readonly-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-school-logo">School Logo</label>
+                                <input type="text" id="settings-school-logo" placeholder="Logo Image URL">
+                                <input type="file" id="settings-school-logo-file" accept="image/*" style="margin-top: 5px; font-size: 0.8rem;">
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-school-address">Postal Address</label>
+                                <input type="text" id="settings-school-address" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-school-phone">Phone Number</label>
+                                <input type="text" id="settings-school-phone" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-school-email">Official Email</label>
+                                <input type="email" id="settings-school-email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-school-head">Head Teacher Name</label>
+                                <input type="text" id="settings-school-head" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-school-sig">Head Teacher Signature</label>
+                                <input type="text" id="settings-school-sig" placeholder="Signature Image URL">
+                                <input type="file" id="settings-school-sig-file" accept="image/*" style="margin-top: 5px; font-size: 0.8rem;">
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-school-stamp">School Stamp</label>
+                                <input type="text" id="settings-school-stamp" placeholder="School Stamp Image URL">
+                                <input type="file" id="settings-school-stamp-file" accept="image/*" style="margin-top: 5px; font-size: 0.8rem;">
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-school-district">District</label>
+                                <input type="text" id="settings-school-district" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-school-country">Country</label>
+                                <input type="text" id="settings-school-country" required value="Malawi">
+                            </div>
+
+                            <div class="button-row full-width">
+                                <button type="submit" class="btn btn-primary">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                    Save Official Details
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ==========================================
+         6. MODALS OVERLAYS & FORMS
+         ========================================== -->
+
+    <!-- ADMIN LOGIN MODAL (TRIGGERED BY HOTKEY) -->
+    <div id="admin-login-modal" class="modal-overlay hidden no-print">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Admin Secure Portal</h3>
+                <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+            <form id="admin-login-form" class="modal-form">
+                <div class="form-group">
+                    <label for="admin-email">Admin Username (Email)</label>
+                    <input type="email" id="admin-email" placeholder="e.g. admin@school.edu" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="admin-password">Secure Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="admin-password" placeholder="••••••••••••" required autocomplete="current-password">
+                        <button type="button" id="toggle-password-visibility" class="password-toggle-btn" aria-label="Toggle password visibility">
+                            <!-- Show Eye Icon -->
+                            <svg class="eye-open-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <!-- Hide Eye Icon -->
+                            <svg class="eye-closed-icon hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" id="admin-login-submit-btn" class="btn btn-primary btn-block">
+                    <span class="btn-text">AUTHENTICATE SYSTEM</span>
+                    <span class="btn-spinner hidden"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- REGISTER SCHOOL MODAL (SUPER ADMIN ONLY) -->
+    <div id="register-school-modal" class="modal-overlay hidden no-print">
+        <div class="modal-card modal-large scrollable-modal">
+            <div class="modal-header">
+                <h3 id="school-modal-title">Register Educational Institution</h3>
+                <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+            <form id="register-school-form" class="modal-form grid-form">
+                <input type="hidden" id="register-school-id">
+                
+                <div class="form-group">
+                    <label for="school-name">School Name</label>
+                    <input type="text" id="school-name" placeholder="Chichiri Secondary School" required>
+                </div>
+                <div class="form-group">
+                    <label for="school-code">School Code</label>
+                    <input type="text" id="school-code" placeholder="CSS001" required>
+                </div>
+                <div class="form-group">
+                    <label for="school-logo">School Logo URL</label>
+                    <input type="text" id="school-logo" placeholder="https://domain.com/logo.png">
+                </div>
+                <div class="form-group">
+                    <label for="school-address">Postal Address</label>
+                    <input type="text" id="school-address" placeholder="P.O. Box 30112, Blantyre 3" required>
+                </div>
+                <div class="form-group">
+                    <label for="school-phone">Phone Number</label>
+                    <input type="text" id="school-phone" placeholder="+265 1 876 211" required>
+                </div>
+                <div class="form-group">
+                    <label for="school-email">Email Address</label>
+                    <input type="email" id="school-email" placeholder="info@chichiri.edu" required>
+                </div>
+                <div class="form-group">
+                    <label for="school-head">Head Teacher Name</label>
+                    <input type="text" id="school-head" placeholder="Mr. B. Banda" required>
+                </div>
+                <div class="form-group">
+                    <label for="school-sig">Head Teacher Signature URL</label>
+                    <input type="text" id="school-sig" placeholder="https://domain.com/sig.png">
+                </div>
+                <div class="form-group">
+                    <label for="school-district">District</label>
+                    <input type="text" id="school-district" placeholder="Blantyre" required>
+                </div>
+                <div class="form-group">
+                    <label for="school-country">Country</label>
+                    <input type="text" id="school-country" value="Malawi" required>
+                </div>
+
+                <div class="button-row full-width">
+                    <button type="submit" class="btn btn-primary">SAVE INSTITUTION RECORD</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CREATE SCHOOL ADMIN MODAL (SUPER ADMIN ONLY) -->
+    <div id="register-admin-modal" class="modal-overlay hidden no-print">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Create School Administrator</h3>
+                <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+            <form id="register-admin-form" class="modal-form">
+                <div class="form-group">
+                    <label for="admin-first-name">First Name</label>
+                    <input type="text" id="admin-first-name" placeholder="John" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-last-name">Last Name</label>
+                    <input type="text" id="admin-last-name" placeholder="Phiri" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-reg-email">Email Address</label>
+                    <input type="email" id="admin-reg-email" placeholder="john.phiri@school.edu" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="admin-reg-password">Access Password</label>
+                    <input type="password" id="admin-reg-password" placeholder="At least 6 characters" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="admin-assigned-school">Assign Institution</label>
+                    <select id="admin-assigned-school" required>
+                        <option value="" disabled selected>Select Institution</option>
+                        <!-- Dynamic Options populated from schools -->
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">REGISTER ADMINISTRATOR</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- REGISTER STUDENT MODAL (SCHOOL ADMIN ONLY) -->
+    <div id="register-student-modal" class="modal-overlay hidden no-print">
+        <div class="modal-card modal-large scrollable-modal">
+            <div class="modal-header">
+                <h3 id="student-modal-title">Register New Student</h3>
+                <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+            <form id="register-student-form" class="modal-form grid-form">
+                <input type="hidden" id="register-student-id">
+                
+                <div class="form-group">
+                    <label for="student-first-name">First Name</label>
+                    <input type="text" id="student-first-name" placeholder="Tiyamike" required>
+                </div>
+                <div class="form-group">
+                    <label for="student-last-name">Last Name</label>
+                    <input type="text" id="student-last-name" placeholder="Phiri" required>
+                </div>
+
+                <div class="form-group full-width checkbox-form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="student-has-lin">
+                        <span class="checkmark"></span>
+                        Student holds a National ID / LIN
+                    </label>
+                </div>
+
+                <div id="lin-field-container" class="form-group full-width hidden">
+                    <label for="student-lin">LIN (National Student ID Number)</label>
+                    <input type="text" id="student-lin" placeholder="e.g. LIN-7612A-98">
+                </div>
+
+                <div class="form-group">
+                    <label for="student-form">Academic Form</label>
+                    <select id="student-form" required>
+                        <option value="" disabled selected>Select Form</option>
+                        <option value="Form 1">Form 1 (JCE)</option>
+                        <option value="Form 2">Form 2 (JCE)</option>
+                        <option value="Form 3">Form 3 (MSCE)</option>
+                        <option value="Form 4">Form 4 (MSCE)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="student-academic-year">Academic Year</label>
+                    <select id="student-academic-year" required>
+                        <option value="2026" selected>2026</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="student-gender">Gender</label>
+                    <select id="student-gender" required>
+                        <option value="" disabled selected>Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="student-dob">Date Of Birth</label>
+                    <input type="date" id="student-dob" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="student-guardian">Guardian Full Name</label>
+                    <input type="text" id="student-guardian" placeholder="e.g. Mary Phiri" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="student-guardian-phone">Guardian Contact Phone</label>
+                    <input type="text" id="student-guardian-phone" placeholder="e.g. +265 888 12 34 56" required>
+                </div>
+
+                <div class="button-row full-width">
+                    <button type="submit" class="btn btn-primary">SAVE STUDENT ENROLLMENT</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         7. SCRIPTS LOADING
+         ========================================== -->
+    <!-- Supabase Client Dependency CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.42.0/dist/umd/supabase.js"></script>
+    <!-- Core Application Custom Code -->
+    <script src="app.js"></script>
+</body>
+</html>
