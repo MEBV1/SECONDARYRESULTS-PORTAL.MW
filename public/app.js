@@ -569,7 +569,10 @@ async function loadSchools() {
                 <td>${school.head_teacher_name || "N/A"}</td>
                 <td>${school.email_address}</td>
                 <td>
-                    <button class="btn btn-secondary btn-edit-school" data-id="${school.id}">Edit</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary btn-edit-school" data-id="${school.id}">Edit</button>
+                        <button class="btn btn-danger btn-delete-school" data-id="${school.id}">Delete</button>
+                    </div>
                 </td>
             `;
             DOMElements.schoolsTbody.appendChild(tr);
@@ -578,6 +581,9 @@ async function loadSchools() {
         // Add action triggers dynamically
         document.querySelectorAll(".btn-edit-school").forEach(btn => {
             btn.addEventListener("click", () => editSchoolRecord(btn.getAttribute("data-id")));
+        });
+        document.querySelectorAll(".btn-delete-school").forEach(btn => {
+            btn.addEventListener("click", () => deleteSchoolRecord(btn.getAttribute("data-id")));
         });
 
     } catch (err) {
@@ -657,7 +663,10 @@ async function loadStudents() {
                 <td><span class="status-badge status-published">${student.section}</span></td>
                 <td>${student.academic_year}</td>
                 <td>
-                    <button class="btn btn-secondary btn-edit-student" data-id="${student.id}">Modify</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary btn-edit-student" data-id="${student.id}">Modify</button>
+                        <button class="btn btn-danger btn-delete-student" data-id="${student.id}">Delete</button>
+                    </div>
                 </td>
             `;
             DOMElements.studentsTbody.appendChild(tr);
@@ -666,7 +675,9 @@ async function loadStudents() {
         document.querySelectorAll(".btn-edit-student").forEach(btn => {
             btn.addEventListener("click", () => editStudentRecord(btn.getAttribute("data-id")));
         });
-
+        document.querySelectorAll(".btn-delete-student").forEach(btn => {
+            btn.addEventListener("click", () => deleteStudentRecord(btn.getAttribute("data-id")));
+        });
         // Initialize Results student navigation listing
         renderStudentSelectorList();
 
@@ -863,6 +874,28 @@ async function editStudentRecord(studentId) {
     document.getElementById("student-guardian-phone").value = student.guardian_phone;
 
     openModal(DOMElements.studentModal);
+}
+// Executes student deletion from the database
+async function deleteStudentRecord(studentId) {
+    const student = state.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    const confirmDelete = confirm(`Are you sure you want to permanently delete student "${student.first_name} ${student.last_name}"?\nThis will remove all of their exam results!`);
+    if (!confirmDelete) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from("students")
+            .delete()
+            .eq("id", studentId);
+
+        if (error) throw error;
+        showToast(`Student "${student.first_name} ${student.last_name}" deleted successfully.`, "success");
+        await loadStudents();
+        await loadResultsPublications();
+    } catch (err) {
+        showToast("Error deleting student: " + err.message, "error");
+    }
 }
 
 // ==========================================
@@ -1254,30 +1287,60 @@ DOMElements.adminRegForm.addEventListener("submit", async (e) => {
     const password = document.getElementById("admin-reg-password").value;
     const schoolId = DOMElements.adminAssignedSchoolSelect.value;
 
+    const submitBtn = DOMElements.adminRegForm.querySelector("button[type='submit']");
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = "Registering Account...";
+    submitBtn.disabled = true;
+
     try {
-        // Signs up school admin with metadata so that on-signup triggers can automatically insert correctly.
-        const { data, error } = await supabaseClient.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    role: "school_admin",
-                    school_id: schoolId,
-                    first_name: first,
-                    last_name: last
-                }
-            }
+        if (!supabaseClient) throw new Error("Supabase is not initialized.");
+
+        // Call the server-side RPC function instead of client-side signup
+        // This bypasses email confirmations and prevents logging out the current Super Admin session
+        const { data, error } = await supabaseClient.rpc("create_school_admin", {
+            p_email: email,
+            p_password: password,
+            p_school_id: schoolId,
+            p_first_name: first,
+            p_last_name: last
         });
 
         if (error) throw error;
-        showToast("Admin account registered and logged.", "success");
+
+        showToast(`Administrator account for ${first} ${last} created and activated!`, "success");
         closeModal(DOMElements.adminModal);
+        DOMElements.adminRegForm.reset();
         await loadAdmins();
 
     } catch (err) {
-        showToast(err.message, "error");
+        showToast("Registration failed: " + err.message, "error");
+    } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
     }
 });
+// Executes school deletion from the database
+async function deleteSchoolRecord(schoolId) {
+    const school = state.schools.find(s => s.id === schoolId);
+    if (!school) return;
+
+    const confirmDelete = confirm(`Are you absolutely sure you want to delete "${school.name}"?\nThis will permanently delete all associated student profiles and exam scorecards!`);
+    if (!confirmDelete) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from("schools")
+            .delete()
+            .eq("id", schoolId);
+
+        if (error) throw error;
+        showToast(`School "${school.name}" deleted successfully.`, "success");
+        await loadSchools();
+        await loadSchoolsForDropdown();
+    } catch (err) {
+        showToast("Error deleting school: " + err.message, "error");
+    }
+}
 
 // ==========================================
 // 14. FILE UPLOADING AND METADATA ASSOCIATION
