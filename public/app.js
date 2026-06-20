@@ -1,10 +1,9 @@
 // public/app.js
-// Purpose: Core Production-ready Application Controller, Supabase Integrations, and Client-side Print Engines
+// Purpose: Unified State Controller, Supabase integrations, File Upload System, and Deletion Engines
 
 // ==========================================
 // 1. SUPABASE CLIENT CONFIGURATION
 // ==========================================
-// Replace these with your actual Supabase project keys during deployment
 const SUPABASE_URL = "https://uxkyuheraonvykrqtdtb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4a3l1aGVyYW9udnlrcnF0ZHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3OTExNDAsImV4cCI6MjA5NzM2NzE0MH0.6KqFH3VvUXMTavr0Kz9tGQW3BE-3OMesZ97JYkCmkc0";
 
@@ -92,6 +91,15 @@ const DOMElements = {
     noStudentSelectedEmpty: document.getElementById("no-student-selected-empty"),
     schoolSettingsForm: document.getElementById("school-settings-form"),
     printStudentCodesBtn: document.getElementById("print-student-codes-pdf-btn"),
+
+    // History Modal & Action Fields
+    resultsHistoryModal: document.getElementById("results-history-modal"),
+    historyStudentName: document.getElementById("history-student-name"),
+    historyStudentCode: document.getElementById("history-student-code"),
+    historyTableTbody: document.getElementById("history-table-tbody"),
+    selectedStudentActions: document.getElementById("selected-student-actions"),
+    btnViewHistory: document.getElementById("btn-view-history"),
+    btnAddNewResult: document.getElementById("btn-add-new-result"),
     
     // Report Card Fields
     reportSchoolLogo: document.getElementById("report-school-logo"),
@@ -126,7 +134,6 @@ const DOMElements = {
 // ==========================================
 // 3. SECURE AD-HOC HOTKEY EVENT DETECTOR
 // ==========================================
-// Requirements: Press CTRL + SHIFT + A, hold for 3 seconds to reveal Admin login modal
 let keysPressed = {};
 let hotkeyTimer = null;
 
@@ -164,10 +171,8 @@ function showToast(message, type = "info") {
     toast.textContent = message;
     DOMElements.toastContainer.appendChild(toast);
     
-    // Trigger animation
     setTimeout(() => toast.classList.add("show"), 10);
     
-    // Auto remove
     setTimeout(() => {
         toast.classList.remove("show");
         setTimeout(() => toast.remove(), 300);
@@ -182,14 +187,12 @@ function closeModal(modal) {
     modal.classList.add("hidden");
 }
 
-// Global modal close triggers
 document.querySelectorAll(".modal-close-btn").forEach(btn => {
     btn.addEventListener("click", () => {
         closeModal(btn.closest(".modal-overlay"));
     });
 });
 
-// Toggle password visibility
 DOMElements.togglePasswordBtn.addEventListener("click", () => {
     const isPassword = DOMElements.adminPasswordInput.type === "password";
     DOMElements.adminPasswordInput.type = isPassword ? "text" : "password";
@@ -201,7 +204,6 @@ DOMElements.togglePasswordBtn.addEventListener("click", () => {
 // 5. APPLICATION STARTUP & AUTOPRIME
 // ==========================================
 window.addEventListener("DOMContentLoaded", async () => {
-    // Mimic initialization timeline
     setTimeout(() => {
         DOMElements.splashScreen.style.opacity = "0";
         DOMElements.splashScreen.style.visibility = "hidden";
@@ -209,7 +211,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         document.body.classList.remove("loading-state");
     }, 2500);
 
-    // Initial check if any administrator session is already active
     if (supabaseClient) {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
@@ -225,7 +226,7 @@ DOMElements.resultsEnquiryForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     
     const studentName = document.getElementById("search-student-name").value.trim();
-    const identifier = document.getElementById("search-identifier").value.trim();
+    const identifier = document.getElementById("search-identifier").value.trim(); // <-- FIXED
     const formVal = document.getElementById("search-form").value;
     const termVal = document.getElementById("search-term").value;
     const academicYear = document.getElementById("search-academic-year").value;
@@ -240,7 +241,6 @@ DOMElements.resultsEnquiryForm.addEventListener("submit", async (e) => {
             throw new Error("Supabase integration database engine is offline.");
         }
 
-        // Query student by Name and either code or LIN
         const { data: students, error: studentError } = await supabaseClient
             .from("students")
             .select("*, schools(*)")
@@ -253,7 +253,6 @@ DOMElements.resultsEnquiryForm.addEventListener("submit", async (e) => {
             throw new Error("No student matched the entered registration records.");
         }
 
-        // Filter by matching name case insensitively
         const matchedStudent = students.find(s => 
             (s.first_name + " " + s.last_name).toLowerCase().includes(studentName.toLowerCase())
         );
@@ -262,7 +261,6 @@ DOMElements.resultsEnquiryForm.addEventListener("submit", async (e) => {
             throw new Error("Student credentials mismatch. Please double check student name spelling.");
         }
 
-        // Search for academic results associated with this student
         const { data: results, error: resultError } = await supabaseClient
             .from("results")
             .select("*")
@@ -270,7 +268,7 @@ DOMElements.resultsEnquiryForm.addEventListener("submit", async (e) => {
             .eq("academic_year", academicYear)
             .eq("term", termVal)
             .eq("is_published", true)
-            .maybeSingle(); // Fixed 406 Not Acceptable when result is empty or draft
+            .maybeSingle(); 
 
         if (resultError || !results) {
             throw new Error("No published results found for the requested term and academic year.");
@@ -288,11 +286,25 @@ DOMElements.resultsEnquiryForm.addEventListener("submit", async (e) => {
     }
 });
 
-// Render verified data into report card Canvas
 function renderReportCard(student, results) {
-    const school = student.schools;
+    // CRITICAL: Overwrite student's school details with local state cache
+    // This makes newly saved/uploaded settings show up instantly in report previews!
+    if (state.currentSchool && student.school_id === state.currentSchool.id) {
+        student.schools = state.currentSchool;
+    }
+
+    let school = student.schools;
     
-    // Bind School Information
+    // Defend against Supabase/PostgREST returning joined tables as single-element arrays
+    if (Array.isArray(school)) {
+        school = school[0];
+    }
+
+    if (!school) {
+        showToast("Error: Associated school details could not be parsed.", "error");
+        return;
+    }
+    
     if (school.logo_url) {
         DOMElements.reportSchoolLogo.src = school.logo_url;
         DOMElements.reportSchoolLogo.classList.remove("hidden");
@@ -306,7 +318,6 @@ function renderReportCard(student, results) {
     DOMElements.reportSchoolAddress.textContent = school.postal_address;
     DOMElements.reportSchoolContact.textContent = `Tel: ${school.phone_number} | Email: ${school.email_address}`;
 
-    // Bind Student Details
     DOMElements.reportStudentName.textContent = `${student.first_name} ${student.last_name}`;
     DOMElements.reportStudentCode.textContent = student.student_code;
     DOMElements.reportStudentLin.textContent = student.lin ? student.lin : "N/A";
@@ -314,10 +325,8 @@ function renderReportCard(student, results) {
     DOMElements.reportAcademicYear.textContent = results.academic_year;
     DOMElements.reportTerm.textContent = results.term;
 
-    // Build academic tables
     DOMElements.reportResultsTbody.innerHTML = "";
     
-    // Safety guard: Filter out any duplicates locally by subject name
     const uniqueSubjects = [];
     const seenSubjects = new Set();
     results.subjects_data.forEach(item => {
@@ -338,7 +347,6 @@ function renderReportCard(student, results) {
         DOMElements.reportResultsTbody.appendChild(tr);
     });
 
-    // Handle summaries
     if (student.section === "JCE") {
         DOMElements.jceSummaryRow.classList.remove("hidden");
         DOMElements.msceSummaryRow.classList.add("hidden");
@@ -352,13 +360,12 @@ function renderReportCard(student, results) {
 
     DOMElements.reportPosition.textContent = `${results.position ? formatOrdinal(results.position) : "Unassigned"} out of ${results.out_of || 0}`;
 
-    // Form teacher & Head teacher Sign-offs
     DOMElements.reportTeacherRemarks.textContent = results.total_points && results.total_points <= 12 || results.total_marks && results.total_marks >= 700 
         ? "Exemplary commitment. An outstanding student in all dynamic areas." 
         : "A balanced performance this term. Excellent progress, room for optimization.";
-    DOMElements.reportHeadRemarks.textContent = "Approved. Valid administrative assessment record.";
+    DOMElements.reportHeadRemarks.textContent = "Approved. Valid academic assessment record.";
 
- DOMElements.reportHeadName.textContent = `${school.head_teacher_name || "Head Teacher"}`;
+    DOMElements.reportHeadName.textContent = `${school.head_teacher_name || "Head Teacher"}`;
     
     const signatureImg = document.getElementById("report-head-signature");
     const stampImg = document.getElementById("report-school-stamp");
@@ -375,8 +382,12 @@ function renderReportCard(student, results) {
         signatureImg.classList.add("hidden");
     }
 
-    // Dynamic rendering of School Stamp or Logo as backup fallback
-    if (school.logo_url) { 
+    // Dynamic rendering of School Stamp
+    if (school.stamp_url) { 
+        stampImg.src = school.stamp_url;
+        stampImg.classList.remove("hidden");
+        hasStamp = true;
+    } else if (school.logo_url) { 
         stampImg.src = school.logo_url;
         stampImg.classList.remove("hidden");
         hasStamp = true;
@@ -411,7 +422,6 @@ DOMElements.backToSearchBtn.addEventListener("click", () => {
     DOMElements.studentSearchView.classList.remove("hidden");
 });
 
-// PDF and Print handlers
 DOMElements.printResultsBtn.addEventListener("click", () => window.print());
 DOMElements.downloadPdfBtn.addEventListener("click", () => window.print());
 
@@ -448,7 +458,6 @@ DOMElements.adminLoginForm.addEventListener("submit", async (e) => {
     }
 });
 
-// Resolve admin profiles and display authorized sections
 async function establishAdminWorkspace(user) {
     try {
         const { data: profile, error } = await supabaseClient
@@ -463,7 +472,6 @@ async function establishAdminWorkspace(user) {
         state.profile = profile;
         state.currentSchool = profile.schools;
 
-        // Populate details on the Sidebar
         DOMElements.sidebarUsername.textContent = `${profile.first_name} ${profile.last_name}`;
         DOMElements.sidebarUserInitials.textContent = `${profile.first_name[0]}${profile.last_name[0]}`;
         
@@ -487,7 +495,6 @@ async function establishAdminWorkspace(user) {
             initializeSchoolProfileSettings();
         }
 
-        // Hide Portal front page and open workspace
         DOMElements.studentSearchView.classList.add("hidden");
         DOMElements.resultsDisplayView.classList.add("hidden");
         DOMElements.adminDashboardView.classList.remove("hidden");
@@ -498,7 +505,6 @@ async function establishAdminWorkspace(user) {
     }
 }
 
-// Admin Logout procedure
 DOMElements.adminLogoutBtn.addEventListener("click", async () => {
     if (supabaseClient) {
         await supabaseClient.auth.signOut();
@@ -512,15 +518,11 @@ DOMElements.adminLogoutBtn.addEventListener("click", async () => {
     showToast("Session terminated.", "info");
 });
 
-// Tab routing logic
 document.querySelectorAll(".sidebar-link").forEach(link => {
     link.addEventListener("click", (e) => {
         const tab = e.currentTarget.getAttribute("data-tab");
-        
-        // Toggle Active styles on Sidebar
         document.querySelectorAll(".sidebar-link").forEach(l => l.classList.remove("active"));
         e.currentTarget.classList.add("active");
-        
         switchTab(tab);
     });
 });
@@ -532,7 +534,6 @@ function switchTab(tabId) {
     const targetTab = document.getElementById(`tab-${tabId}`);
     if (targetTab) targetTab.classList.remove("hidden");
 
-    // Dynamic Header adjustments
     let title = "Manage Records";
     if (tabId === "manage-schools") title = "Register & Manage Schools";
     if (tabId === "manage-admins") title = "School Administrator Accounts";
@@ -548,7 +549,6 @@ function switchTab(tabId) {
 // 8. DATA LOADER ENGINES (CRUD)
 // ==========================================
 
-// Schools Loader (Super Admin)
 async function loadSchools() {
     try {
         const { data: schools, error } = await supabaseClient
@@ -578,7 +578,6 @@ async function loadSchools() {
             DOMElements.schoolsTbody.appendChild(tr);
         });
 
-        // Add action triggers dynamically
         document.querySelectorAll(".btn-edit-school").forEach(btn => {
             btn.addEventListener("click", () => editSchoolRecord(btn.getAttribute("data-id")));
         });
@@ -591,7 +590,6 @@ async function loadSchools() {
     }
 }
 
-// Dropdown mapping
 async function loadSchoolsForDropdown() {
     try {
         const { data, error } = await supabaseClient.from("schools").select("id, name");
@@ -609,7 +607,6 @@ async function loadSchoolsForDropdown() {
     }
 }
 
-// Admins Loader (Super Admin)
 async function loadAdmins() {
     try {
         const { data, error } = await supabaseClient
@@ -629,17 +626,21 @@ async function loadAdmins() {
                 <td><span class="status-badge status-published">${admin.role}</span></td>
                 <td>${new Date(admin.created_at).toLocaleDateString()}</td>
                 <td>
-                    <button class="btn btn-danger btn-delete-admin" data-id="${admin.id}">Deactivate</button>
+                    <button class="btn btn-danger btn-delete-admin" data-id="${admin.id}">Delete</button>
                 </td>
             `;
             DOMElements.adminsTbody.appendChild(tr);
         });
+
+        document.querySelectorAll(".btn-delete-admin").forEach(btn => {
+            btn.addEventListener("click", () => deleteAdminRecord(btn.getAttribute("data-id")));
+        });
+
     } catch (err) {
         showToast("Error retrieving admin details: " + err.message, "error");
     }
 }
 
-// Students Loader (School Admin)
 async function loadStudents() {
     try {
         const { data, error } = await supabaseClient
@@ -651,7 +652,6 @@ async function loadStudents() {
         if (error) throw error;
         state.students = data;
 
-        // Render table
         DOMElements.studentsTbody.innerHTML = "";
         data.forEach(student => {
             const tr = document.createElement("tr");
@@ -678,7 +678,7 @@ async function loadStudents() {
         document.querySelectorAll(".btn-delete-student").forEach(btn => {
             btn.addEventListener("click", () => deleteStudentRecord(btn.getAttribute("data-id")));
         });
-        // Initialize Results student navigation listing
+        
         renderStudentSelectorList();
 
     } catch (err) {
@@ -686,7 +686,6 @@ async function loadStudents() {
     }
 }
 
-// Results Publications Statuses Loader
 async function loadResultsPublications() {
     try {
         const { data, error } = await supabaseClient
@@ -737,7 +736,6 @@ async function loadResultsPublications() {
     }
 }
 
-// Toggle publication
 async function togglePublishStatus(id, newStatus) {
     try {
         const { error } = await supabaseClient
@@ -795,7 +793,6 @@ DOMElements.studentForm.addEventListener("submit", async (e) => {
 
     try {
         if (id) {
-            // Update Student Profile
             const { error } = await supabaseClient
                 .from("students")
                 .update({
@@ -816,7 +813,6 @@ DOMElements.studentForm.addEventListener("submit", async (e) => {
             if (error) throw error;
             showToast("Student enrollment card updated.", "success");
         } else {
-            // Insert Student (Student Code trigger automatically creates unique SCH001-2026-F1-0001 code)
             const { error } = await supabaseClient
                 .from("students")
                 .insert([{
@@ -825,7 +821,7 @@ DOMElements.studentForm.addEventListener("submit", async (e) => {
                     last_name: lastName,
                     has_lin: hasLin,
                     lin: lin,
-                    student_code: "TMP-" + Math.floor(Math.random() * 900000), // Code is auto-generated by DB trigger anyway
+                    student_code: "TMP-" + Math.floor(Math.random() * 900000), 
                     form: formVal,
                     section: formVal === "Form 1" || formVal === "Form 2" ? "JCE" : "MSCE",
                     academic_year: academicYear,
@@ -875,7 +871,7 @@ async function editStudentRecord(studentId) {
 
     openModal(DOMElements.studentModal);
 }
-// Executes student deletion from the database
+
 async function deleteStudentRecord(studentId) {
     const student = state.students.find(s => s.id === studentId);
     if (!student) return;
@@ -907,7 +903,6 @@ DOMElements.printStudentCodesBtn.addEventListener("click", () => {
         return;
     }
 
-    // Build unique isolated print Document window
     const printWindow = window.open("", "_blank");
     const logoHtml = state.currentSchool.logo_url 
         ? `<img src="${state.currentSchool.logo_url}" style="height: 50px;">` 
@@ -1009,7 +1004,6 @@ DOMElements.marksStudentSearch.addEventListener("input", renderStudentSelectorLi
 async function selectStudentForMarks(student) {
     state.selectedStudent = student;
     
-    // Highlight items in listing
     document.querySelectorAll(".student-select-item").forEach(item => {
         item.classList.remove("selected");
     });
@@ -1018,14 +1012,16 @@ async function selectStudentForMarks(student) {
     DOMElements.selectedStudentBannerName.textContent = `${student.first_name} ${student.last_name}`;
     DOMElements.selectedStudentBannerCode.textContent = `${student.student_code} | Form: ${student.form} | Section: ${student.section}`;
     
-    // Setup metadata defaults based on student records
+    DOMElements.selectedStudentActions.classList.remove("hidden");
+    
+    DOMElements.btnViewHistory.onclick = () => openResultsHistoryModal(student);
+    DOMElements.btnAddNewResult.onclick = () => prepNewResultsEntry(student);
+
     DOMElements.marksEntryYearSelect.value = student.academic_year;
 
-    // Build dynamically the specific school subjects
     const subjects = student.section === "JCE" ? JCE_SUBJECTS : MSCE_SUBJECTS;
     DOMElements.subjectsGrid.innerHTML = "";
 
-    // Load any existing result values from database to auto-populate
     let existingResults = {};
     try {
         const { data, error } = await supabaseClient
@@ -1081,8 +1077,6 @@ DOMElements.marksEntryForm.addEventListener("submit", async (e) => {
     });
 
     try {
-        // Upsert standard scorecard rules
-        // Determine primary match by student ID, year, and term
         const { data: checkExisting } = await supabaseClient
             .from("results")
             .select("id")
@@ -1092,7 +1086,6 @@ DOMElements.marksEntryForm.addEventListener("submit", async (e) => {
             .maybeSingle();
 
         if (checkExisting) {
-            // Update
             const { error } = await supabaseClient
                 .from("results")
                 .update({
@@ -1105,7 +1098,6 @@ DOMElements.marksEntryForm.addEventListener("submit", async (e) => {
             if (error) throw error;
             showToast("Report scorecard updated.", "success");
         } else {
-            // Insert
             const { error } = await supabaseClient
                 .from("results")
                 .insert([{
@@ -1144,6 +1136,7 @@ function initializeSchoolProfileSettings() {
     document.getElementById("settings-school-email").value = school.email_address;
     document.getElementById("settings-school-head").value = school.head_teacher_name || "";
     document.getElementById("settings-school-sig").value = school.head_teacher_signature_url || "";
+    document.getElementById("settings-school-stamp").value = school.stamp_url || "";
     document.getElementById("settings-school-district").value = school.district;
     document.getElementById("settings-school-country").value = school.country || "Malawi";
 }
@@ -1158,6 +1151,7 @@ DOMElements.schoolSettingsForm.addEventListener("submit", async (e) => {
     const email = document.getElementById("settings-school-email").value.trim();
     const head = document.getElementById("settings-school-head").value.trim();
     const sig = document.getElementById("settings-school-sig").value.trim();
+    const stamp = document.getElementById("settings-school-stamp").value.trim();
     const district = document.getElementById("settings-school-district").value.trim();
     const country = document.getElementById("settings-school-country").value.trim();
 
@@ -1172,6 +1166,7 @@ DOMElements.schoolSettingsForm.addEventListener("submit", async (e) => {
                 email_address: email,
                 head_teacher_name: head,
                 head_teacher_signature_url: sig,
+                stamp_url: stamp,
                 district,
                 country
             })
@@ -1180,7 +1175,6 @@ DOMElements.schoolSettingsForm.addEventListener("submit", async (e) => {
         if (error) throw error;
         showToast("School administrative profile updated.", "success");
         
-        // Update local session caches
         state.currentSchool.name = name;
         state.currentSchool.logo_url = logoUrl;
         state.currentSchool.postal_address = address;
@@ -1188,6 +1182,7 @@ DOMElements.schoolSettingsForm.addEventListener("submit", async (e) => {
         state.currentSchool.email_address = email;
         state.currentSchool.head_teacher_name = head;
         state.currentSchool.head_teacher_signature_url = sig;
+        state.currentSchool.stamp_url = stamp;
         state.currentSchool.district = district;
         state.currentSchool.country = country;
 
@@ -1224,7 +1219,6 @@ DOMElements.schoolForm.addEventListener("submit", async (e) => {
 
     try {
         if (id) {
-            // Update
             const { error } = await supabaseClient
                 .from("schools")
                 .update({ name, logo_url: logo, postal_address: address, phone_number: phone, email_address: email, head_teacher_name: head, head_teacher_signature_url: sig, district, country })
@@ -1233,7 +1227,6 @@ DOMElements.schoolForm.addEventListener("submit", async (e) => {
             if (error) throw error;
             showToast("Institution configuration details updated.", "success");
         } else {
-            // Insert
             const { error } = await supabaseClient
                 .from("schools")
                 .insert([{ name, code, logo_url: logo, postal_address: address, phone_number: phone, email_address: email, head_teacher_name: head, head_teacher_signature_url: sig, district, country }]);
@@ -1273,7 +1266,6 @@ async function editSchoolRecord(schoolId) {
     openModal(DOMElements.schoolModal);
 }
 
-// Admins modal opens
 DOMElements.openAdminModalBtn.addEventListener("click", () => {
     DOMElements.adminRegForm.reset();
     openModal(DOMElements.adminModal);
@@ -1295,8 +1287,6 @@ DOMElements.adminRegForm.addEventListener("submit", async (e) => {
     try {
         if (!supabaseClient) throw new Error("Supabase is not initialized.");
 
-        // Call the server-side RPC function instead of client-side signup
-        // This bypasses email confirmations and prevents logging out the current Super Admin session
         const { data, error } = await supabaseClient.rpc("create_school_admin", {
             p_email: email,
             p_password: password,
@@ -1319,7 +1309,7 @@ DOMElements.adminRegForm.addEventListener("submit", async (e) => {
         submitBtn.disabled = false;
     }
 });
-// Executes school deletion from the database
+
 async function deleteSchoolRecord(schoolId) {
     const school = state.schools.find(s => s.id === schoolId);
     if (!school) return;
@@ -1342,11 +1332,31 @@ async function deleteSchoolRecord(schoolId) {
     }
 }
 
+async function deleteAdminRecord(adminId) {
+    const confirmDelete = confirm("Are you absolutely sure you want to permanently delete this administrator account?\nThis will immediately revoke their access and delete their profile!");
+    if (!confirmDelete) return;
+
+    try {
+        if (!supabaseClient) throw new Error("Supabase is not initialized.");
+
+        const { error } = await supabaseClient.rpc("delete_school_admin", {
+            p_user_id: adminId
+        });
+
+        if (error) throw error;
+
+        showToast("Administrator account permanently deleted.", "success");
+        await loadAdmins(); 
+
+    } catch (err) {
+        showToast("Deletion failed: " + err.message, "error");
+    }
+}
+
 // ==========================================
 // 14. FILE UPLOADING AND METADATA ASSOCIATION
 // ==========================================
 
-// Uploads a file directly to Supabase Storage and returns the public URL
 async function uploadAssetToSupabase(file, folderPath) {
     if (!supabaseClient) {
         throw new Error("Supabase integration engine is offline.");
@@ -1371,7 +1381,6 @@ async function uploadAssetToSupabase(file, folderPath) {
     return publicUrl;
 }
 
-// Bind Settings File input change events
 document.addEventListener("DOMContentLoaded", () => {
     const logoFileInput = document.getElementById("settings-school-logo-file");
     const sigFileInput = document.getElementById("settings-school-sig-file");
@@ -1384,8 +1393,19 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 showToast("Uploading school logo...", "info");
                 const publicUrl = await uploadAssetToSupabase(file, "logos");
+                
+                // Direct database auto-save for immediate activation
+                const { error } = await supabaseClient
+                    .from("schools")
+                    .update({ logo_url: publicUrl })
+                    .eq("id", state.currentSchool.id);
+
+                if (error) throw error;
+
                 document.getElementById("settings-school-logo").value = publicUrl;
-                showToast("School logo uploaded successfully.", "success");
+                state.currentSchool.logo_url = publicUrl;
+                
+                showToast("School logo uploaded and saved successfully.", "success");
             } catch (err) {
                 showToast("Upload failed: " + err.message, "error");
             }
@@ -1399,8 +1419,19 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 showToast("Uploading principal signature...", "info");
                 const publicUrl = await uploadAssetToSupabase(file, "signatures");
+                
+                // Direct database auto-save for immediate activation
+                const { error } = await supabaseClient
+                    .from("schools")
+                    .update({ head_teacher_signature_url: publicUrl })
+                    .eq("id", state.currentSchool.id);
+
+                if (error) throw error;
+
                 document.getElementById("settings-school-sig").value = publicUrl;
-                showToast("Signature uploaded successfully.", "success");
+                state.currentSchool.head_teacher_signature_url = publicUrl;
+
+                showToast("Signature uploaded and saved successfully.", "success");
             } catch (err) {
                 showToast("Upload failed: " + err.message, "error");
             }
@@ -1414,11 +1445,127 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 showToast("Uploading school stamp...", "info");
                 const publicUrl = await uploadAssetToSupabase(file, "stamps");
+                
+                // Direct database auto-save for immediate activation
+                const { error } = await supabaseClient
+                    .from("schools")
+                    .update({ stamp_url: publicUrl })
+                    .eq("id", state.currentSchool.id);
+
+                if (error) throw error;
+
                 document.getElementById("settings-school-stamp").value = publicUrl;
-                showToast("School stamp uploaded successfully.", "success");
+                state.currentSchool.stamp_url = publicUrl;
+
+                showToast("School stamp uploaded and saved successfully.", "success");
             } catch (err) {
                 showToast("Upload failed: " + err.message, "error");
             }
         });
     }
 });
+
+// ==========================================
+// 15. RESULTS HISTORY & SCORECARD MULTI-ASSESSMENT ENGINE
+// ==========================================
+
+async function openResultsHistoryModal(student) {
+    if (!supabaseClient) return;
+
+    DOMElements.historyStudentName.textContent = `${student.first_name} ${student.last_name}`;
+    DOMElements.historyStudentCode.textContent = `${student.student_code} | Class: ${student.form} (${student.section})`;
+    DOMElements.historyTableTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">Retrieving history...</td></tr>`;
+    
+    openModal(DOMElements.resultsHistoryModal);
+
+    try {
+        const { data: records, error } = await supabaseClient
+            .from("results")
+            .select("*")
+            .eq("student_id", student.id)
+            .order("academic_year", { ascending: false })
+            .order("term", { ascending: false });
+
+        if (error) throw error;
+
+        DOMElements.historyTableTbody.innerHTML = "";
+
+        if (!records || records.length === 0) {
+            DOMElements.historyTableTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">No historical academic results records found for this student.</td></tr>`;
+            return;
+        }
+
+        records.forEach(rec => {
+            const scoreDisplay = student.section === "JCE" 
+                ? `${rec.total_marks} Marks` 
+                : `${rec.total_points} Points`;
+
+            const statusClass = rec.is_published ? "status-published" : "status-draft";
+            const statusText = rec.is_published ? "Published" : "Draft";
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><strong>${rec.academic_year}</strong></td>
+                <td>${rec.term}</td>
+                <td><strong>${scoreDisplay}</strong></td>
+                <td>${rec.position ? formatOrdinal(rec.position) + ' of ' + rec.out_of : 'Unassigned'}</td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary btn-view-card" data-rec-id="${rec.id}" style="padding: 4px 8px; font-size: 0.75rem;">View Card</button>
+                        <button class="btn btn-danger btn-delete-card" data-rec-id="${rec.id}" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button>
+                    </div>
+                </td>
+            `;
+            DOMElements.historyTableTbody.appendChild(tr);
+        });
+
+        DOMElements.historyTableTbody.querySelectorAll(".btn-view-card").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const recId = btn.getAttribute("data-rec-id");
+                const matchedRecord = records.find(r => r.id === recId);
+                if (matchedRecord) {
+                    closeModal(DOMElements.resultsHistoryModal);
+                    renderReportCard(student, matchedRecord);
+                }
+            });
+        });
+
+        DOMElements.historyTableTbody.querySelectorAll(".btn-delete-card").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const recId = btn.getAttribute("data-rec-id");
+                const matchedRecord = records.find(r => r.id === recId);
+                const confirmDelete = confirm(`Are you sure you want to permanently delete the results for ${matchedRecord.academic_year} ${matchedRecord.term}?\nThis cannot be undone!`);
+                if (!confirmDelete) return;
+
+                try {
+                    const { error: delError } = await supabaseClient
+                        .from("results")
+                        .delete()
+                        .eq("id", recId);
+
+                    if (delError) throw delError;
+
+                    showToast("Historical scorecard permanently deleted.", "success");
+                    await openResultsHistoryModal(student); 
+                    await loadResultsPublications();       
+                } catch (err) {
+                    showToast("Deletion failed: " + err.message, "error");
+                }
+            });
+        });
+
+    } catch (err) {
+        showToast("Error retrieving history: " + err.message, "error");
+    }
+}
+
+function prepNewResultsEntry(student) {
+    const subjectInputs = DOMElements.subjectsGrid.querySelectorAll("input");
+    subjectInputs.forEach(input => {
+        input.value = "";
+    });
+
+    showToast("Form ready. Select a new Year and Term to add a new academic scorecard.", "info");
+    DOMElements.marksEntryTermSelect.focus();
+}

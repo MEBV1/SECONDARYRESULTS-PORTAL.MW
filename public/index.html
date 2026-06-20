@@ -495,9 +495,21 @@
 
                             <!-- Right: Entry Form -->
                             <div class="marks-entry-panel">
-                                <div class="selected-student-banner">
-                                    <h4 id="selected-student-display-name">No Student Selected</h4>
-                                    <p id="selected-student-display-code">Please search and select a student from the sidebar</p>
+                                <div class="selected-student-banner" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                                    <div>
+                                        <h4 id="selected-student-display-name">No Student Selected</h4>
+                                        <p id="selected-student-display-code" style="margin-bottom: 0;">Please search and select a student from the sidebar</p>
+                                    </div>
+                                    <div id="selected-student-actions" class="hidden" style="display: flex; gap: 10px;">
+                                        <button type="button" id="btn-view-history" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                            View Previous Results Records
+                                        </button>
+                                        <button type="button" id="btn-add-new-result" class="btn btn-accent" style="padding: 8px 16px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                            Add New Results
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <form id="marks-entry-form" class="hidden">
@@ -855,7 +867,43 @@
     </div>
 
     <!-- ==========================================
-         7. SCRIPTS LOADING
+         8. STUDENT RESULTS HISTORY MODAL
+         ========================================== -->
+    <div id="results-history-modal" class="modal-overlay hidden no-print">
+        <div class="modal-card modal-large scrollable-modal">
+            <div class="modal-header" style="background-color: var(--primary-color);">
+                <h3>Academic Assessment History</h3>
+                <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+            <div style="padding: 28px;">
+                <div style="margin-bottom: 24px;">
+                    <h4 id="history-student-name" style="font-size: 1.4rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 4px;">Student Name</h4>
+                    <p id="history-student-code" style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600;">Student Code</p>
+                </div>
+                
+                <div class="table-scroll-container">
+                    <table class="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Academic Year</th>
+                                <th>Term</th>
+                                <th>Aggregate Score</th>
+                                <th>Class Position</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-tbody">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         9. SCRIPTS LOADING
          ========================================== -->
     <!-- Supabase Client Dependency CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.42.0/dist/umd/supabase.js"></script>
