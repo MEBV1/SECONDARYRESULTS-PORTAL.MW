@@ -38,7 +38,7 @@ const JCE_SUBJECTS = [
 
 const MSCE_SUBJECTS = [
     "Agriculture", "Bible Knowledge", "Biology", "Chemistry", "Chichewa", 
-    "English", "Geography", "History", "Mathematics", "Physics", "Social Life"
+    "English", "Geography", "History", "Mathematics", "Physics", "Social and Life Skills"
 ];
 
 // Document Selectors
