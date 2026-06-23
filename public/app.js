@@ -30,10 +30,10 @@ const state = {
     activeTab: "manage-schools"
 };
 
-// JCE & MSCE Curriculum Structure (UPDATED: SocioLife combined, Physical Science removed)
+// JCE & MSCE Curriculum Structure (UPDATED: Combined Social & Life Skills, Physical Science removed)
 const JCE_SUBJECTS = [
     "Agriculture", "Bible Knowledge", "Biology", "Chemistry", "Chichewa", 
-    "English", "Geography", "History", "SocioLife", "Mathematics", "Physics"
+    "English", "Geography", "History", "Social and Life Skills", "Mathematics", "Physics"
 ];
 
 const MSCE_SUBJECTS = [
