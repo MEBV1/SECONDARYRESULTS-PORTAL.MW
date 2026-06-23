@@ -464,7 +464,13 @@ async function establishAdminWorkspace(user) {
 
         state.user = user;
         state.profile = profile;
-        state.currentSchool = profile.schools;
+        
+        // CRITICAL UNPACKER: Defend against PostgREST returning linked school as a single-element array inside profile
+        let schoolData = profile.schools;
+        if (Array.isArray(schoolData)) {
+            schoolData = schoolData[0];
+        }
+        state.currentSchool = schoolData;
 
         DOMElements.sidebarUsername.textContent = `${profile.first_name} ${profile.last_name}`;
         DOMElements.sidebarUserInitials.textContent = `${profile.first_name[0]}${profile.last_name[0]}`;
@@ -1099,7 +1105,7 @@ DOMElements.marksEntryForm.addEventListener("submit", async (e) => {
             if (error) throw error;
             showToast("Report scorecard updated.", "success");
         } else {
-            const { error } = await supabaseClient
+            const { error = null } = await supabaseClient
                 .from("results")
                 .insert([{
                     student_id: state.selectedStudent.id,
@@ -1125,34 +1131,62 @@ DOMElements.marksEntryForm.addEventListener("submit", async (e) => {
 // ==========================================
 // 12. INSTITUTIONAL CONFIGURATION
 // ==========================================
+// Helper to update settings profile page visual image previews immediately
+function updateSettingsImagePreviews() {
+    const school = state.currentSchool;
+    if (!school) return;
+
+    const logoPreview = document.getElementById("preview-school-logo");
+    const sigPreview = document.getElementById("preview-school-sig");
+    const stampPreview = document.getElementById("preview-school-stamp");
+
+    if (school.logo_url) {
+        logoPreview.src = school.logo_url;
+        logoPreview.style.display = "block";
+    } else {
+        logoPreview.style.display = "none";
+    }
+
+    if (school.head_teacher_signature_url) {
+        sigPreview.src = school.head_teacher_signature_url;
+        sigPreview.style.display = "block";
+    } else {
+        sigPreview.style.display = "none";
+    }
+
+    if (school.stamp_url) {
+        stampPreview.src = school.stamp_url;
+        stampPreview.style.display = "block";
+    } else {
+        stampPreview.style.display = "none";
+    }
+}
+
 function initializeSchoolProfileSettings() {
     const school = state.currentSchool;
     if (!school) return;
 
     document.getElementById("settings-school-name").value = school.name;
     document.getElementById("settings-school-code").value = school.code;
-    document.getElementById("settings-school-logo").value = school.logo_url || "";
     document.getElementById("settings-school-address").value = school.postal_address;
     document.getElementById("settings-school-phone").value = school.phone_number;
     document.getElementById("settings-school-email").value = school.email_address;
     document.getElementById("settings-school-head").value = school.head_teacher_name || "";
-    document.getElementById("settings-school-sig").value = school.head_teacher_signature_url || "";
-    document.getElementById("settings-school-stamp").value = school.stamp_url || "";
     document.getElementById("settings-school-district").value = school.district;
     document.getElementById("settings-school-country").value = school.country || "Malawi";
+
+    // Set active visual uploads
+    updateSettingsImagePreviews();
 }
 
 DOMElements.schoolSettingsForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     
     const name = document.getElementById("settings-school-name").value.trim();
-    const logoUrl = document.getElementById("settings-school-logo").value.trim();
     const address = document.getElementById("settings-school-address").value.trim();
     const phone = document.getElementById("settings-school-phone").value.trim();
     const email = document.getElementById("settings-school-email").value.trim();
     const head = document.getElementById("settings-school-head").value.trim();
-    const sig = document.getElementById("settings-school-sig").value.trim();
-    const stamp = document.getElementById("settings-school-stamp").value.trim();
     const district = document.getElementById("settings-school-district").value.trim();
     const country = document.getElementById("settings-school-country").value.trim();
 
@@ -1161,29 +1195,25 @@ DOMElements.schoolSettingsForm.addEventListener("submit", async (e) => {
             .from("schools")
             .update({
                 name,
-                logo_url: logoUrl,
                 postal_address: address,
                 phone_number: phone,
                 email_address: email,
                 head_teacher_name: head,
-                head_teacher_signature_url: sig,
-                stamp_url: stamp,
                 district,
                 country
+                // logo_url, head_teacher_signature_url, and stamp_url are already auto-saved on upload
             })
             .eq("id", state.currentSchool.id);
 
         if (error) throw error;
         showToast("School administrative profile updated.", "success");
         
+        // Update local session caches
         state.currentSchool.name = name;
-        state.currentSchool.logo_url = logoUrl;
         state.currentSchool.postal_address = address;
         state.currentSchool.phone_number = phone;
         state.currentSchool.email_address = email;
         state.currentSchool.head_teacher_name = head;
-        state.currentSchool.head_teacher_signature_url = sig;
-        state.currentSchool.stamp_url = stamp;
         state.currentSchool.district = district;
         state.currentSchool.country = country;
 
@@ -1403,8 +1433,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (error) throw error;
 
-                document.getElementById("settings-school-logo").value = publicUrl;
                 state.currentSchool.logo_url = publicUrl;
+                updateSettingsImagePreviews(); // Update live preview on settings page immediately
                 
                 showToast("School logo uploaded and saved successfully.", "success");
             } catch (err) {
@@ -1429,8 +1459,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (error) throw error;
 
-                document.getElementById("settings-school-sig").value = publicUrl;
                 state.currentSchool.head_teacher_signature_url = publicUrl;
+                updateSettingsImagePreviews(); // Update live preview on settings page immediately
 
                 showToast("Signature uploaded and saved successfully.", "success");
             } catch (err) {
@@ -1455,8 +1485,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (error) throw error;
 
-                document.getElementById("settings-school-stamp").value = publicUrl;
                 state.currentSchool.stamp_url = publicUrl;
+                updateSettingsImagePreviews(); // Update live preview on settings page immediately
 
                 showToast("School stamp uploaded and saved successfully.", "success");
             } catch (err) {
@@ -1570,6 +1600,28 @@ function prepNewResultsEntry(student) {
     showToast("Form ready. Select a new Year and Term to add a new academic scorecard.", "info");
     DOMElements.marksEntryTermSelect.focus();
 }
+
+async function deleteSchoolAdmin(adminId) {
+    const confirmDelete = confirm("Are you sure you want to permanently delete this administrator account?\nThis will immediately revoke their access and delete their profile!");
+    if (!confirmDelete) return;
+
+    try {
+        if (!supabaseClient) throw new Error("Supabase is not initialized.");
+
+        const { error } = await supabaseClient.rpc("delete_school_admin", {
+            p_user_id: adminId
+        });
+
+        if (error) throw error;
+
+        showToast("Administrator account permanently deleted.", "success");
+        await loadAdmins(); 
+
+    } catch (err) {
+        showToast("Deletion failed: " + err.message, "error");
+    }
+}
+
 // ==========================================
 // 16. ADVANCED CLIENT-SIDE SECURITY & DEVTOOLS DETECTOR
 // ==========================================
@@ -1618,26 +1670,320 @@ document.addEventListener('keydown', (e) => {
     window.console.clear = noop;
 })();
 
-// D. Infinite Debugger Loop (Anti-Debugging)
-// Automatically freezes or disrupts execution if DevTools is forced open
-// Runs only when deployed on a live server (excludes localhost development)
+// D. Safe, Non-Blocking Anti-Debugging Timer
+// Suspends browser execution only if DevTools is actually open on a live server
 (function() {
     const antiDebug = function() {
-        try {
-            (function anti(i) {
-                if (("" + i / i).length !== 1 || i % 20 === 0) {
-                    (function() {}).constructor("debugger")();
-                } else {
-                    debugger;
-                }
-                anti(++i);
-            })(0);
-        } catch (e) {
-            setTimeout(antiDebug, 1000);
-        }
+        debugger;
     };
     
+    // Only run on live domains (excludes localhost/127.0.0.1 development)
     if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-        setInterval(antiDebug, 1000);
+        setInterval(antiDebug, 200); // Clean, non-recursive interval (safe for the event loop)
     }
 })();
+// ==========================================
+// 17. PROFILE IMAGES AUTO-SAVE & PREVIEW ENGINE (PATCH OVERRIDE)
+// ==========================================
+
+// Helper to update live settings page previews
+function updateSettingsImagePreviews() {
+    const school = state.currentSchool;
+    if (!school) return;
+
+    const logoPreview = document.getElementById("preview-school-logo");
+    const sigPreview = document.getElementById("preview-school-sig");
+    const stampPreview = document.getElementById("preview-school-stamp");
+
+    if (logoPreview) {
+        if (school.logo_url) {
+            logoPreview.src = school.logo_url;
+            logoPreview.style.display = "block";
+        } else {
+            logoPreview.style.display = "none";
+        }
+    }
+
+    if (sigPreview) {
+        if (school.head_teacher_signature_url) {
+            sigPreview.src = school.head_teacher_signature_url;
+            sigPreview.style.display = "block";
+        } else {
+            sigPreview.style.display = "none";
+        }
+    }
+
+    if (stampPreview) {
+        if (school.stamp_url) {
+            stampPreview.src = school.stamp_url;
+            stampPreview.style.display = "block";
+        } else {
+            stampPreview.style.display = "none";
+        }
+    }
+}
+
+// Override establishAdminWorkspace to automatically unpack the schools array on login
+async function establishAdminWorkspace(user) {
+    try {
+        const { data: profile, error } = await supabaseClient
+            .from("profiles")
+            .select("*, schools(*)")
+            .eq("id", user.id)
+            .single();
+
+        if (error || !profile) throw new Error("Admin privileges mapping corrupted.");
+
+        state.user = user;
+        state.profile = profile;
+        
+        // Defend against PostgREST returning linked schools as a single-element array inside profiles
+        let schoolData = profile.schools;
+        if (Array.isArray(schoolData)) {
+            schoolData = schoolData[0];
+        }
+        state.currentSchool = schoolData;
+
+        DOMElements.sidebarUsername.textContent = `${profile.first_name} ${profile.last_name}`;
+        DOMElements.sidebarUserInitials.textContent = `${profile.first_name[0]}${profile.last_name[0]}`;
+        
+        if (profile.role === "super_admin") {
+            DOMElements.sidebarRoleBadge.textContent = "Super Admin";
+            DOMElements.superAdminMenu.classList.remove("hidden");
+            DOMElements.schoolAdminMenu.classList.add("hidden");
+            DOMElements.activeSchoolDisplay.textContent = "All Schools (Supervisory View)";
+            switchTab("manage-schools");
+            await loadSchools();
+            await loadSchoolsForDropdown();
+            await loadAdmins();
+        } else {
+            DOMElements.sidebarRoleBadge.textContent = "School Admin";
+            DOMElements.superAdminMenu.classList.add("hidden");
+            DOMElements.schoolAdminMenu.classList.remove("hidden");
+            DOMElements.activeSchoolDisplay.textContent = profile.schools.name;
+            switchTab("manage-students");
+            await loadStudents();
+            await loadResultsPublications();
+            initializeSchoolProfileSettings();
+        }
+
+        DOMElements.studentSearchView.classList.add("hidden");
+        DOMElements.resultsDisplayView.classList.add("hidden");
+        DOMElements.adminDashboardView.classList.remove("hidden");
+
+    } catch (err) {
+        showToast(err.message, "error");
+        await supabaseClient.auth.signOut();
+    }
+}
+
+// Override initializeSchoolProfileSettings to trigger image previews
+function initializeSchoolProfileSettings() {
+    const school = state.currentSchool;
+    if (!school) return;
+
+    document.getElementById("settings-school-name").value = school.name;
+    document.getElementById("settings-school-code").value = school.code;
+    document.getElementById("settings-school-address").value = school.postal_address;
+    document.getElementById("settings-school-phone").value = school.phone_number;
+    document.getElementById("settings-school-email").value = school.email_address;
+    document.getElementById("settings-school-head").value = school.head_teacher_name || "";
+    document.getElementById("settings-school-district").value = school.district;
+    document.getElementById("settings-school-country").value = school.country || "Malawi";
+
+    // Render preview blocks immediately
+    updateSettingsImagePreviews();
+}
+
+// Clone and replace the profile form element to wipe out older submit event listeners safely
+const oldSettingsForm = DOMElements.schoolSettingsForm;
+if (oldSettingsForm) {
+    const newSettingsForm = oldSettingsForm.cloneNode(true);
+    oldSettingsForm.parentNode.replaceChild(newSettingsForm, oldSettingsForm);
+    DOMElements.schoolSettingsForm = newSettingsForm;
+
+    // Bind updated submit validation logic (excluding text URLs since uploads are auto-saved)
+    DOMElements.schoolSettingsForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const name = document.getElementById("settings-school-name").value.trim();
+        const address = document.getElementById("settings-school-address").value.trim();
+        const phone = document.getElementById("settings-school-phone").value.trim();
+        const email = document.getElementById("settings-school-email").value.trim();
+        const head = document.getElementById("settings-school-head").value.trim();
+        const district = document.getElementById("settings-school-district").value.trim();
+        const country = document.getElementById("settings-school-country").value.trim();
+
+        try {
+            const { error } = await supabaseClient
+                .from("schools")
+                .update({
+                    name,
+                    postal_address: address,
+                    phone_number: phone,
+                    email_address: email,
+                    head_teacher_name: head,
+                    district,
+                    country
+                })
+                .eq("id", state.currentSchool.id);
+
+            if (error) throw error;
+            showToast("School administrative profile updated.", "success");
+            
+            state.currentSchool.name = name;
+            state.currentSchool.postal_address = address;
+            state.currentSchool.phone_number = phone;
+            state.currentSchool.email_address = email;
+            state.currentSchool.head_teacher_name = head;
+            state.currentSchool.district = district;
+            state.currentSchool.country = country;
+
+        } catch (err) {
+            showToast(err.message, "error");
+        }
+    });
+}
+
+// Clone and replace file input elements to clear old change listeners
+function resetAndBindFileListeners() {
+    const logoFileInput = document.getElementById("settings-school-logo-file");
+    const sigFileInput = document.getElementById("settings-school-sig-file");
+    const stampFileInput = document.getElementById("settings-school-stamp-file");
+
+    if (logoFileInput) {
+        const clone = logoFileInput.cloneNode(true);
+        logoFileInput.parentNode.replaceChild(clone, logoFileInput);
+        clone.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                showToast("Uploading school logo...", "info");
+                const publicUrl = await uploadAssetToSupabase(file, "logos");
+                
+                const { error } = await supabaseClient
+                    .from("schools")
+                    .update({ logo_url: publicUrl })
+                    .eq("id", state.currentSchool.id);
+
+                if (error) throw error;
+
+                state.currentSchool.logo_url = publicUrl;
+                updateSettingsImagePreviews(); // Update settings preview instantly
+                
+                showToast("School logo uploaded and saved successfully.", "success");
+            } catch (err) {
+                showToast("Upload failed: " + err.message, "error");
+            }
+        });
+    }
+
+    if (sigFileInput) {
+        const clone = sigFileInput.cloneNode(true);
+        sigFileInput.parentNode.replaceChild(clone, sigFileInput);
+        clone.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                showToast("Uploading principal signature...", "info");
+                const publicUrl = await uploadAssetToSupabase(file, "signatures");
+                
+                const { error } = await supabaseClient
+                    .from("schools")
+                    .update({ head_teacher_signature_url: publicUrl })
+                    .eq("id", state.currentSchool.id);
+
+                if (error) throw error;
+
+                state.currentSchool.head_teacher_signature_url = publicUrl;
+                updateSettingsImagePreviews(); // Update settings preview instantly
+
+                showToast("Signature uploaded and saved successfully.", "success");
+            } catch (err) {
+                showToast("Upload failed: " + err.message, "error");
+            }
+        });
+    }
+
+    if (stampFileInput) {
+        const clone = stampFileInput.cloneNode(true);
+        stampFileInput.parentNode.replaceChild(clone, stampFileInput);
+        clone.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                showToast("Uploading school stamp...", "info");
+                const publicUrl = await uploadAssetToSupabase(file, "stamps");
+                
+                const { error } = await supabaseClient
+                    .from("schools")
+                    .update({ stamp_url: publicUrl })
+                    .eq("id", state.currentSchool.id);
+
+                if (error) throw error;
+
+                state.currentSchool.stamp_url = publicUrl;
+                updateSettingsImagePreviews(); // Update settings preview instantly
+
+                showToast("School stamp uploaded and saved successfully.", "success");
+            } catch (err) {
+                showToast("Upload failed: " + err.message, "error");
+            }
+        });
+    }
+}
+
+// Run listeners setup on login and page load
+document.addEventListener("DOMContentLoaded", resetAndBindFileListeners);
+if (state.currentSchool) resetAndBindFileListeners();
+// ==========================================
+// 18. PWA INSTALLATION ORCHESTRATION ENGINE
+// ==========================================
+
+let deferredPrompt = null;
+const pwaInstallBtn = document.getElementById("pwa-install-btn");
+
+// 1. Register the non-caching Service Worker to satisfy PWA criteria
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('Service Worker registered successfully:', reg.scope))
+            .catch(err => console.error('Service Worker registration failed:', err));
+    });
+}
+
+// 2. Capture the browser's native installation prompt hook
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the default browser-specific banner from showing
+    e.preventDefault();
+    // Cache the event so we can trigger it on the button click
+    deferredPrompt = e;
+    // Unhide the custom "Install App" button in the header nav
+    if (pwaInstallBtn) {
+        pwaInstallBtn.classList.remove("hidden");
+    }
+});
+
+// 3. Handle the "Install App" button click event
+if (pwaInstallBtn) {
+    pwaInstallBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        // Trigger the native prompt
+        deferredPrompt.prompt();
+        // Wait for the user's decision
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User installation choice: ${outcome}`);
+        // Clear the deferred prompt variable
+        deferredPrompt = null;
+        // Hide the install button again
+        pwaInstallBtn.classList.add("hidden");
+    });
+}
+
+// 4. Hide the button automatically if the app is successfully installed
+window.addEventListener('appinstalled', (evt) => {
+    console.log('Results Portal app successfully installed on device!');
+    if (pwaInstallBtn) {
+        pwaInstallBtn.classList.add("hidden");
+    }
+});

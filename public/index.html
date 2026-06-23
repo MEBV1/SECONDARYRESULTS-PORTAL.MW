@@ -5,12 +5,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Results Management Portal</title>
+    <title>MyScore Malawi</title>
+    
+    <!-- PWA Configuration and Mobile Capability -->
+    <meta name="theme-color" content="#1E3A8A">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MyScore MW">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Standard Browser Tab Icon (Favicon) with Cache-Buster -->
+    <link rel="icon" type="image/png" href="icon.png?v=1">
+    <link rel="shortcut icon" type="image/png" href="icon.png?v=1">
+    <link rel="apple-touch-icon" href="icon.png?v=1">
+
     <!-- Professional Google Font Inter & Playfair Display for report cards -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* CSS to hide plain-text URL fields from settings profile tab */
+        #settings-school-logo, 
+        #settings-school-sig, 
+        #settings-school-stamp {
+            display: none !important;
+        }
+    </style>
 </head>
 <body class="loading-state">
 
@@ -26,7 +48,7 @@
                     <path d="M35 50L45 60L65 40" stroke="var(--accent-color)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </div>
-            <h1 class="splash-title">School Results Portal</h1>
+            <h1 class="splash-title">MyScore Malawi</h1>
             <p class="splash-subtitle">Academic Excellence Record System</p>
             <div class="splash-progress">
                 <div class="progress-bar-fill"></div>
@@ -62,11 +84,15 @@
                     </div>
                     <div>
                         <span class="portal-badge">MALAŴI</span>
-                        <h1 class="brand-title">National Results Portal</h1>
+                        <h1 class="brand-title">MyScore Malawi</h1>
                     </div>
                 </div>
                 
                 <nav class="header-nav">
+                    <button id="pwa-install-btn" class="btn btn-accent hidden" style="padding: 6px 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; border: none; cursor: pointer; margin-right: 8px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Install App
+                    </button>
                     <span class="system-time">Year of Excellence 2026</span>
                     <button id="admin-trigger-info-btn" class="info-btn" aria-label="Information">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -600,9 +626,11 @@
                                 <input type="text" id="settings-school-code" readonly class="readonly-input">
                             </div>
                             <div class="form-group">
-                                <label for="settings-school-logo">School Logo</label>
-                                <input type="text" id="settings-school-logo" placeholder="Logo Image URL">
-                                <input type="file" id="settings-school-logo-file" accept="image/*" style="margin-top: 5px; font-size: 0.8rem;">
+                                <label style="font-weight: 600;">School Logo</label>
+                                <div style="margin-bottom: 8px; border: 1px dashed var(--border-color); padding: 8px; border-radius: var(--border-radius-sm); text-align: center; background: #F8FAFC;">
+                                    <img id="preview-school-logo" src="" alt="No Logo Uploaded" style="max-height: 60px; max-width: 100%; display: none; margin: 0 auto;">
+                                </div>
+                                <input type="file" id="settings-school-logo-file" accept="image/*" style="font-size: 0.8rem;">
                             </div>
                             <div class="form-group">
                                 <label for="settings-school-address">Postal Address</label>
@@ -621,14 +649,18 @@
                                 <input type="text" id="settings-school-head" required>
                             </div>
                             <div class="form-group">
-                                <label for="settings-school-sig">Head Teacher Signature</label>
-                                <input type="text" id="settings-school-sig" placeholder="Signature Image URL">
-                                <input type="file" id="settings-school-sig-file" accept="image/*" style="margin-top: 5px; font-size: 0.8rem;">
+                                <label style="font-weight: 600;">Head Teacher Signature</label>
+                                <div style="margin-bottom: 8px; border: 1px dashed var(--border-color); padding: 8px; border-radius: var(--border-radius-sm); text-align: center; background: #F8FAFC;">
+                                    <img id="preview-school-sig" src="" alt="No Signature Uploaded" style="max-height: 40px; max-width: 100%; display: none; margin: 0 auto;">
+                                </div>
+                                <input type="file" id="settings-school-sig-file" accept="image/*" style="font-size: 0.8rem;">
                             </div>
                             <div class="form-group">
-                                <label for="settings-school-stamp">School Stamp</label>
-                                <input type="text" id="settings-school-stamp" placeholder="School Stamp Image URL">
-                                <input type="file" id="settings-school-stamp-file" accept="image/*" style="margin-top: 5px; font-size: 0.8rem;">
+                                <label style="font-weight: 600;">School Stamp</label>
+                                <div style="margin-bottom: 8px; border: 1px dashed var(--border-color); padding: 8px; border-radius: var(--border-radius-sm); text-align: center; background: #F8FAFC;">
+                                    <img id="preview-school-stamp" src="" alt="No Stamp Uploaded" style="max-height: 50px; max-width: 100%; display: none; margin: 0 auto;">
+                                </div>
+                                <input type="file" id="settings-school-stamp-file" accept="image/*" style="font-size: 0.8rem;">
                             </div>
                             <div class="form-group">
                                 <label for="settings-school-district">District</label>
@@ -851,12 +883,12 @@
 
                 <div class="form-group">
                     <label for="student-guardian">Guardian Full Name</label>
-                    <input type="text" id="student-guardian" placeholder="e.g. Mary Phiri" required>
+                    <input type="text" id="student-guardian" placeholder="Mary Phiri" required>
                 </div>
 
                 <div class="form-group">
                     <label for="student-guardian-phone">Guardian Contact Phone</label>
-                    <input type="text" id="student-guardian-phone" placeholder="e.g. +265 888 12 34 56" required>
+                    <input type="text" id="student-guardian-phone" placeholder="+265 888 12 34 56" required>
                 </div>
 
                 <div class="button-row full-width">
@@ -911,3 +943,51 @@
     <script src="app.js"></script>
 </body>
 </html>
+<!-- ==========================================
+         PWA VISUAL PREVIEWS & AUTO-SAVE LAYOUT PATCH
+         ========================================== -->
+    <style>
+        /* Cleanly hide the plain text URL input fields from the profile form */
+        #settings-school-logo, 
+        #settings-school-sig, 
+        #settings-school-stamp {
+            display: none !important;
+        }
+        .settings-preview-box {
+            margin-bottom: 8px; 
+            border: 1px dashed var(--border-color); 
+            padding: 8px; 
+            border-radius: var(--border-radius-sm); 
+            text-align: center; 
+            background: #F8FAFC;
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Find settings form file elements
+            const logoFile = document.getElementById("settings-school-logo-file");
+            const sigFile = document.getElementById("settings-school-sig-file");
+            const stampFile = document.getElementById("settings-school-stamp-file");
+
+            // Inject responsive preview boxes directly above their file pickers
+            if (logoFile) {
+                const logoDiv = document.createElement("div");
+                logoDiv.className = "settings-preview-box";
+                logoDiv.innerHTML = `<img id="preview-school-logo" src="" alt="No Logo" style="max-height: 60px; max-width: 100%; display: none; margin: 0 auto;">`;
+                logoFile.parentNode.insertBefore(logoDiv, logoFile);
+            }
+            if (sigFile) {
+                const sigDiv = document.createElement("div");
+                sigDiv.className = "settings-preview-box";
+                sigDiv.innerHTML = `<img id="preview-school-sig" src="" alt="No Signature" style="max-height: 40px; max-width: 100%; display: none; margin: 0 auto;">`;
+                sigFile.parentNode.insertBefore(sigDiv, sigFile);
+            }
+            if (stampFile) {
+                const stampDiv = document.createElement("div");
+                stampDiv.className = "settings-preview-box";
+                stampDiv.innerHTML = `<img id="preview-school-stamp" src="" alt="No Stamp" style="max-height: 50px; max-width: 100%; display: none; margin: 0 auto;">`;
+                stampFile.parentNode.insertBefore(stampDiv, stampFile);
+            }
+        });
+    </script>
+    _
